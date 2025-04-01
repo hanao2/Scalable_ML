@@ -12,7 +12,7 @@ class CustomModel(nn.Module):
     @nn.compact
     def __call__(self, x: jax.Array, train: bool) -> jax.Array: # in pytorch we use 'forward' whereas in jax and tensorflow we use __call__.
         x = nn.Dense(self.hidden_size, dtype=self.dtype)(x) # unlike pytorch, jax doesn't require passing the input size. Would find it based on the input (x).
-        x = nn.LayerNorm(dtype=self.dtype)
+        x = nn.LayerNorm(dtype=self.dtype)(x)
         x = nn.tanh(x)
         x = nn.Dropout(rate=self.dropout_rate, deterministic=not train)(x)
         x = nn.Dense(self.num_classes, dtype=self.dtype)(x)
