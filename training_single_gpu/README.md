@@ -6,8 +6,9 @@ We will implement these techniques using both JAX and PyTorch (JAX for now). To 
 
 When tabulating the model architecture and input/parameter shapes, we should pass a random number generator for the parameters ('params'), otherwise we receive the following error message
 ```
+flax.errors.InvalidRngError: Dense_0 needs PRNG for "params" (https://flax.readthedocs.io/en/latest/api_reference/flax.errors.html#flax.errors.InvalidRngError)
 ```
-Passing a random number generator for the dropout layer wouldn't be necessary for tabulation. However, it is required once you run forward pass through model.apply. Otherwise you'll get the following error message
+By calling `.tabulate`, you're just building the structure of the network, and no actual computation or parameter updates are taking place. Dropout, however, is typically disabled during this stage. It's treated as part of the model architecture definition, but no randomness is involved yet. The dropout mask is not actually generated, so you don't need an RNG for it at this point. THerefore, passing a random number generator for the dropout layer wouldn't be necessary for tabulation. However, it is required once you run forward pass through model.apply. Otherwise you'll get the following error message
 ```
-
+flax.errors.InvalidRngError: Dropout_0 needs PRNG for "dropout" (https://flax.readthedocs.io/en/latest/api_reference/flax.errors.html#flax.errors.InvalidRngError)
 ```
