@@ -1,15 +1,17 @@
+import yaml
 import jax
 import jax.numpy as jnp
+from ml_collections import ConfigDict
 from model import CustomModel
 from utils import CustomActivation
 
-def mixed_precision():
+def mixed_precision(samples, config: ConfigDict):
     dtype = jnp.float32 # compare this with jnp.bfloat16 and jnp.float16
-    x = jnp.ones(shape=(100, 128), dtype=dtype)
+    x = jnp.ones(shape=(samples, config.input_size), dtype=dtype)
     key = jax.random.PRNGKey(0)
     params_key, dropout_key = jax.random.split(key, num=2)
-    print(params_key, dropout_key)
-    model = CustomModel(dtype=dtype)
+    config.dtype = dtype
+    model = CustomModel(config=config)
 
     # tabulate model
     table = model.tabulate(rngs=params_key, x=x, train=True) # you need to pass the arguments of the __call__ function as well as random number generators! Welcome to functional programming! :)
@@ -30,5 +32,8 @@ def activation_checkpointing(remat: bool):
     print(out)
 
 if __name__ == "__main__":
-    #mixed_precision()
-    activation_checkpointing(remat=False)
+    with open("config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    config = ConfigDict(config["network_size"])
+    mixed_precision(samples=100, config=config)
+    #activation_checkpointing(remat=False)
