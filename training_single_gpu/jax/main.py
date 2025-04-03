@@ -3,9 +3,9 @@ import jax
 import jax.numpy as jnp
 from ml_collections import ConfigDict
 from model import CustomModel
-from utils import CustomActivation
+from utils import custom_loss
 
-def mixed_precision(samples, config: ConfigDict):
+def mixed_precision(samples: int, config: ConfigDict):
     dtype = jnp.float32 # compare this with jnp.bfloat16 and jnp.float16
     x = jnp.ones(shape=(samples, config.input_size), dtype=dtype)
     key = jax.random.PRNGKey(0)
@@ -21,19 +21,21 @@ def mixed_precision(samples, config: ConfigDict):
     params = model.init(rngs=params_key, x=x, train=True)
     out = model.apply(params, x, train=True, rngs=dropout_key)
 
-def activation_checkpointing(remat: bool):
+
+def activation_checkpointing(samples: int, config: ConfigDict, remat: bool):
     dtype = jnp.bfloat16
-    x = jnp.ones(shape=(100, 128), dtype=dtype)
-    act_fn = CustomActivation
-    if remat:
-        act_fn = jax.remat(act_fn)
-    grad_fn = jax.grad(act_fn)
-    out = grad_fn(x)
-    print(out)
+    x = jnp.ones(shape=(samples, config.input_size), dtype=dtype)
+    grad_fn = jax.grad(custom_loss)
+    _ = grad_fn(x, remat=False)
+
+ 
+# def gradient_accumulation():
 
 if __name__ == "__main__":
-    with open("config.yaml", "r") as f:
+    with open("../utils/config.yaml", "r") as f:
         config = yaml.safe_load(f)
     config = ConfigDict(config["network_size"])
-    mixed_precision(samples=100, config=config)
-    #activation_checkpointing(remat=False)
+    #mixed_precision(samples=100, config=config)
+    #activation_checkpointing(samples=100, config=config, remat=False)
+    batch_size = 8
+    num_minibatches = 4
