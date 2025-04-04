@@ -29,7 +29,9 @@ def activation_checkpointing(samples: int, config: ConfigDict, remat: bool):
     _ = grad_fn(x, remat=False)
 
  
-# def gradient_accumulation():
+def gradient_accumulation(samples: int, config: ConfigDict, batch_size: int, num_minibatches: int):
+    rng = jax.random.PRNGKey(0)
+    rng_input, rng_label, rng_param, rng_model = jax.random.split(rng, num=4)
 
 if __name__ == "__main__":
     with open("../utils/config.yaml", "r") as f:
@@ -37,5 +39,4 @@ if __name__ == "__main__":
     config = ConfigDict(config["network_size"])
     #mixed_precision(samples=100, config=config)
     #activation_checkpointing(samples=100, config=config, remat=False)
-    batch_size = 8
-    num_minibatches = 4
+
