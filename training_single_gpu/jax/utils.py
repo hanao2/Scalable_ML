@@ -29,24 +29,26 @@ class Batch:
 
 def classification_loss(batch: Batch, apply_fn: Callable, params: PyTree, rng: jax.random.PRNGKey) -> Tuple[PyTree, Metrics]:
     inputs, labels = batch.inputs, batch.labels
-    logits = apply_fn(params=params, x=inputs, train=True, rngs=rng) # the rng is for dropout
+    logits = apply_fn({"params": params}, x=inputs, train=True, rngs=rng) # the rng is for dropout
     loss = optax.softmax_cross_entropy_with_integer_labels(logits, labels)
     pred_class = jnp.argmax(logits, axis=-1)
     correct_preds = jnp.equal(pred_class, labels)
-    metrics = {"loss": (loss.sum(), batch.shape[0]), "accuracy": (correct_preds.sum(), batch.shape[0])}
+    metrics = {"loss": (loss.sum(), batch.inputs.shape[0]), "accuracy": (correct_preds.sum(), batch.inputs.shape[0])}
+    loss = loss.mean()
     return loss, metrics
 
 def accumulate_gradients(batch: Batch, num_minibatches: int, rng: jax.random.PRNGKey, state: TrainState):
-    minibatch_size = batch.shape[0] // num_minibatches
+    minibatch_size = batch.inputs.shape[0] // num_minibatches
     rngs = jax.random.split(rng, num=num_minibatches)
+    vgrad = jax.value_and_grad(classification_loss, has_aux=True, argnums=2)
     grads = None
     metrics = None
     for minibatch_idx in range(num_minibatches):
-        with jax.named_scope(f"Minibatch {minibatch+1}"):
+        with jax.named_scope(f"Minibatch {minibatch_idx+1}"):
             start_ind = minibatch_idx * minibatch_size
             end_ind = start_ind + minibatch_size
             minibatch = jax.tree_map(lambda x: x[start_ind:end_ind], batch)
-            vgrad = jax.value_and_grad(classification_loss, has_aux=True)
+             #, allow_int=True)
             (_, metric), grad = vgrad(minibatch, state.apply_fn, state.params, rngs[minibatch_idx])
             
             if grads is None:
@@ -58,29 +60,20 @@ def accumulate_gradients(batch: Batch, num_minibatches: int, rng: jax.random.PRN
     grads = jax.tree_map(lambda x: x / num_minibatches, grads)
     return grads, metrics
 
-
-def train_step(batch: Batch, state: TrainState, rng: jax.random.PRNGKey, num_minibatches: int):
-    next_rng, cur_rng = jax.random.split(rng, num=2)
+# @jax.jit(static_argnums=(2,))
+def train_step(batch: Batch, state: TrainState, num_minibatches: int):
+    next_rng, cur_rng = jax.random.split(state.rng, num=2)
     grads, metrics = accumulate_gradients(batch, num_minibatches, cur_rng, state)
-    state = state.apply_gradients(grads, next_rng)
+    state = state.apply_gradients(grads=grads, rng=next_rng)
     return state, grads, metrics
 
-def train(batch: Batch, state: TrainState, rng: jax.random.PRNGKey, num_epochs=5):
+def train(batch: Batch, state: TrainState, num_epochs: int, num_minibatches: int):
+    jit_train_step = jax.jit(train_step, static_argnums=(2,))
     for _ in range(num_epochs):
-        state, grads, metrics = train_step(batch, state, rng)
+        state, grads, metrics = jit_train_step(batch, state, num_minibatches)
     return grads, metrics
 
-
-
-
-
-
-
-
-
-
-# ask Alireza decorator versus parent class
-# jax.jit automatic or not?
+# check jax.jit as both decorator and wrapper
 
 
 
