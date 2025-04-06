@@ -4,7 +4,7 @@ Streamlining the training procedure doesnot necessarily mean multi-GPU training.
 
 We will implement these techniques using both JAX and PyTorch (JAX for now). To implement our model we use `Flax` which is a neural network library and ecosystem for JAX (disclosure: I keep confusing flask with flax! :smile:). 
 
-When tabulating (`model.tabulate`) or initiating the model (`model.init`), you should pass a random number generator for the parameters ('params'), otherwise we receive the following error message
+When tabulating (`model.tabulate`) or initiating the model (`model.init`), you should pass a random number generator for the parameters ('params'), otherwise you receive the following error message
 ```
 flax.errors.InvalidRngError: Dense_0 needs PRNG for "params" (https://flax.readthedocs.io/en/latest/api_reference/flax.errors.html#flax.errors.InvalidRngError)
 ```
