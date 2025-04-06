@@ -12,4 +12,4 @@ By calling `tabulate`, you're just building the structure of the network, and no
 ```
 flax.errors.InvalidRngError: Dropout_0 needs PRNG for "dropout" (https://flax.readthedocs.io/en/latest/api_reference/flax.errors.html#flax.errors.InvalidRngError)
 ```
-There are exclusive functions in `main.py`, each implementing/practicing reducing the memory footprint in one of these approaches: mixed precision, activation checkpointing and gradient accumulation. Also, to dictate the network configuration, such as network size and dropout rate, we use `ConfigDict` from the `ml_collections` library which allows for dot-accessing to the keys.
+There are exclusive functions in `main.py`, each implementing/practicing reducing the memory footprint in one of these approaches: mixed precision, activation checkpointing and gradient accumulation. Also, to dictate the network configuration, such as network size and dropout rate, we use `ConfigDict` from the `ml_collections` library which allows for dot-accessing the keys.
