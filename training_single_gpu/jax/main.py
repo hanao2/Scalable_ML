@@ -34,8 +34,10 @@ def activation_checkpointing(samples: int, config: ConfigDict, remat: bool):
  
 def gradient_accumulation(samples: int, config: ConfigDict, num_minibatches: int):
     dtype = jnp.bfloat16
-    config.dropout_rate = 0.1
+    # config.dropout_rate = 0.0
     config.dtype = dtype
+    print(f'dropout_rate: ', config.dropout_rate)
+    print(f'num_minibatches: ', num_minibatches)
     rng = jax.random.PRNGKey(0)
     rng_input, rng_label, rng_param, rng_model = jax.random.split(rng, num=4)
     batch = Batch(
