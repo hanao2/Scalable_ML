@@ -1,18 +1,11 @@
-'''
 import yaml
-import jax
-import jax.numpy as jnp
-import optax
-from model import CustomModel
-from utils import custom_loss
-from utils import Batch, TrainState, train
-'''
 from ml_collections import ConfigDict
 from utils import set_XLA_flags
 from utils import Batch, TrainState,
 from utils import mixed_precision, activation_checkpointing, gradient_accumulation
 
 set_XLA_flags()
+
 if __name__ == "__main__":
     with open("../utils/config.yaml", "r") as f:
         config = yaml.safe_load(f)
