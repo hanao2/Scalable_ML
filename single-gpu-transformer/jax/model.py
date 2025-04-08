@@ -81,3 +81,4 @@ class TransformerBlock(nn.Module):
     train: bool
 
     @nn.compact
+    def __call__(self, x: jax.Array):
