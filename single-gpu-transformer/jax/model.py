@@ -8,9 +8,10 @@ from utils import gelu
 
 class MLPBlock(nn.Module):
     config: ConfigDict
+    train: bool
 
     @nn.compact
-    def __call__(self, x: jax.Array, train: bool) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         input_dim = x.shape[0]
         x = nn.LayerNorm(dtype=self.config.dtype, name="pre_norm")(x)
         x = nn.Dense(
@@ -24,7 +25,7 @@ class MLPBlock(nn.Module):
             name="output_layer")(x)
         x = nn.Dropout(
             rate=self.config.dropout_rate,
-            deterministic=not train)(x)
+            deterministic=not self.train)(x)
         return x
 
 
@@ -52,9 +53,10 @@ def dot_product_attention(
 class AttentionBlock(nn.Module):
     config: ConfigDict
     mask: jax.Array
+    train: bool
 
     @nn.compact
-    def __call__(self, x: jax.Array, train: bool) -> jax.Array:
+    def __call__(self, x: jax.Array) -> jax.Array:
         input_dim = x.shape[0]
         x = nn.LayerNorm(dtype=self.config.dtype, name="pre_norm")(x)
         qkv = nn.DenseGeneral(
@@ -69,8 +71,13 @@ class AttentionBlock(nn.Module):
                             dtype=self.config.dtype, name="output_layer")(x)
         x = nn.Dropout(
             rate=self.config.dropout_rate,
-            deterministic=not train)(x)
+            deterministic=not self.train)(x)
         return x
 
 
-class
+class TransformerBlock(nn.Module):
+    config: ConfigDict
+    mask: jax.Array
+    train: bool
+
+    @nn.compact

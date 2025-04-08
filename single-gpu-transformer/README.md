@@ -4,7 +4,7 @@ Transformer is a large model, and onse should be familiar with how to train it u
 
 We also try to profile this model, as a way to optimize its performance.
 
-
+You might wonder how useful the `nn.compact` decorator is when defining the model architecture. In Flax, there are two ways to define submodules and variables: 1) Explicitly: through `setup` method, which is somewhat similar to the `__init__` constructor in PyTorch. 2) In-line: through `nn.compact` decorator, which allows defining the whole module in a single method. You can find instructions on using each [here](https://flax-linen.readthedocs.io/en/latest/guides/flax_fundamentals/setup_or_nncompact.html).
 
 
 
