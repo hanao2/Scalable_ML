@@ -1,0 +1,6 @@
+network_size:
+        input_size: 128
+        hidden_size: 256
+        dropout_rate: 0.1
+        num_heads: 4
+        head_dim: 256

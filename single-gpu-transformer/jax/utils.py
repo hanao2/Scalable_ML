@@ -1,5 +1,7 @@
+import os
 import jax
 import jax.numpy as jnp
+import numpy as np
 import optax
 from flax.training import train_state
 from flax.struct import dataclass
@@ -35,6 +37,14 @@ def custom_loss(x: jax.Array, remat: bool) -> jax.Array:
     if remat:
         act_fn = jax.remat(act_fn)
     return jnp.mean(act_fn(x))
+
+
+def gelu(x: jax.Array) -> jax.Array:
+    """GeLU activation function with approximate tanh."""
+    jax.debug.print("Executing GeLU")
+    x3 = jnp.power(x, 3)
+    tanh_input = np.sqrt(2 / np.pi) * (x + 0.044715 * x3)
+    return 0.5 * x * (1 + jnp.tanh(tanh_input))
 
 
 class TrainState(train_state.TrainState):
