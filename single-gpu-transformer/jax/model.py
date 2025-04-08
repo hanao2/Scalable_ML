@@ -75,10 +75,12 @@ class AttentionBlock(nn.Module):
         return x
 
 
-class TransformerBlock(nn.Module):
+class TransformerBlock(nn.Module) -> jax.Array:
     config: ConfigDict
     mask: jax.Array
     train: bool
 
     @nn.compact
     def __call__(self, x: jax.Array):
+        attn = AttentionBlock(self.config, self.mask, self.train)
+        mlp = MLPBlock(self.config, self.train)
