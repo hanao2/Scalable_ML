@@ -1,0 +1,9 @@
+default_language_version:
+  python: python3
+repos:
+  - repo: https://github.com/pre-commit/mirrors-autopep8
+    rev: v1.6.0  # or the latest version
+    hooks:
+      - id: autopep8
+        args: [--in-place, --aggressive, --aggressive]
+
