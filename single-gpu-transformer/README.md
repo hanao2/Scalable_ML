@@ -8,7 +8,8 @@ You might wonder how useful the `nn.compact` decorator is when defining the mode
 
 The different transformer components such as MLP block ([MLPBlock](jax/model.py#L9)), attention layer ([dot_product_attention](jax/model.py#L32)), attention block ([AttentionBlock](jax/model.py#L53)) and their combination ([TransformerBlock](jax/model.py#L78)) are scripted separately. FOr the rematerialization/checkpointing approach, the target function/submodules are defined in the config file. Here we use the `remat` function from Flax, which is different from the JAX one that we used [earlier](../single-gpu-training-hacks/jax/utils.py#L19).
 
-There are different types of masking for the attention block. Padded mask would allow for including sequences of different length in the same batch. It zero-pads the mask for instances with $L < L_{max}$
+There are different types of masking for the attention block. Padded mask would allow for including sequences of different length in the same batch. It zero-pads the mask for instances with $L < L_{max}$. Causal (look-ahead) mask would leave-out the following tokens in order to prevent the model from cheating by looking at the future tokens in advance. The causal mask is an upper-triangular matrix, and is especially important in autoregressive models such as GPT. Lastly, cutomized masks could be applied where specific tokens are masked out in the attention layer. 
 
+In the [`Transformer`](jax/model.py#L100) class
 
 

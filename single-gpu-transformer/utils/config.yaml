@@ -1,6 +1,15 @@
-network_size:
-        input_size: 128
-        hidden_size: 256
-        dropout_rate: 0.1
-        num_heads: 4
-        head_dim: 256
+dtype: jnp.bfloat16
+softmax_dtype: jnp.float32
+vocab_size: 10000
+hidden_size: 256
+max_seq_length: 100
+mlp_expansion: 2
+dropout_rate: 0.1
+num_heads: 4
+head_dim: 256
+causal_mask: True
+remat: ["MLP", "Attn"]
+
+
+
+input_size: 128

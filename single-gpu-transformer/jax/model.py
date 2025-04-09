@@ -106,3 +106,17 @@ class Transformer(nn.Module):
             x: jax.Array,
             mask: jax.Array,
             train: bool) -> jax.Array:
+        if mask is None and self.config.causal_mask:
+            mask = nn.make_causal_mask(x, dtype=jnp.bool_)
+        # Input layer
+        x = nn.Embed(
+            num_embeddings=self.config.vocab_size,
+            features=self.config.hidden_size,
+            dtype=self.config.dtype,
+            name="embed",
+        )(x)
+        pos_emb = self.param(
+            "pos_emb",
+            nn.initializers.normal(stddev=0.02),
+            (self.config.max_seq_len, self.config.hidden_size),
+        )
