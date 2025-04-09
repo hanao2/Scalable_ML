@@ -75,12 +75,34 @@ class AttentionBlock(nn.Module):
         return x
 
 
-class TransformerBlock(nn.Module) -> jax.Array:
+class TransformerBlock(nn.Module):
     config: ConfigDict
     mask: jax.Array
     train: bool
 
     @nn.compact
-    def __call__(self, x: jax.Array):
-        attn = AttentionBlock(self.config, self.mask, self.train)
-        mlp = MLPBlock(self.config, self.train)
+    def __call__(self, x: jax.Array) -> jax.Array:
+        # MLP block
+        mlp = MLPBlock
+        if "MLP" in self.config.remat:
+            mlp = nn.remat(mlp, prevent_cse=False)
+        # residual connection
+        x = x + mlp(self.config, self.train, name="mlp")(x)
+        # Attention n=block
+        attn = AttentionBlock
+        if "Attn" in self.config.remat:
+            attn = nn.remat(attn, prevent_cse=False)
+        x = x + attn(self.config, self.mask, self.train,
+                     name="attn")(x)  # residual connection
+        return x
+
+
+class Transformer(nn.Module):
+    config: ConfigDict
+
+    @nn.compact
+    def __call__(
+            self,
+            x: jax.Array,
+            mask: jax.Array,
+            train: bool) -> jax.Array:
