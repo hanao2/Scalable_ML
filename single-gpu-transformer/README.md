@@ -1,6 +1,6 @@
 # Efficient Training of a  Transformer Model on a Single GPU
 
-Transformer is a large model, and onse should be familiar with how to train it using limited resources. In this project we develop a transformer model, and look into benefitting from the three training hacks (mixed precision, activation checkpointing and gradient accumulation) that we have discussed in a separate [repo](../single-gpu-training-hacks/).
+Transformer is a large model, and onse should be familiar with how to train it using limited resources. In this project we develop a transformer model, and look into benefitting from the three training hacks (mixed precision, activation checkpointing and gradient accumulation) that we have discussed in a separate [repo](../single-gpu-training-hacks/). This project implements a GPT-style autoregressive model, and that's why you we've set the output size to a value equal to the vocabulary size. We want to generate a token/vocab based on the prior tokens .
 
 We also try to profile this model, as a way to optimize its performance. We use the ml_collections module and the ConfigDict class for a conveninet dot-access of the model hyperparameters.
 
