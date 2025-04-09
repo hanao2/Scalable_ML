@@ -8,7 +8,10 @@ dropout_rate: 0.1
 num_heads: 4
 head_dim: 256
 causal_mask: True
-remat: ["MLP", "Attn"]
+remat: ["transformer", "MLP", "Attn"]
+scan_layers: True
+num_transformer_layers: 10
+num_outputs: 10
 
 
 

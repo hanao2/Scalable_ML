@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import flax.linen as nn
 from typing import Any
 from ml_collections import ConfigDict
+import functools
 from utils import gelu
 
 
@@ -108,7 +109,7 @@ class Transformer(nn.Module):
             train: bool) -> jax.Array:
         if mask is None and self.config.causal_mask:
             mask = nn.make_causal_mask(x, dtype=jnp.bool_)
-        # Input layer
+        # Input layer (implement embedding and positional encoding)
         x = nn.Embed(
             num_embeddings=self.config.vocab_size,
             features=self.config.hidden_size,
@@ -120,3 +121,31 @@ class Transformer(nn.Module):
             nn.initializers.normal(stddev=0.02),
             (self.config.max_seq_len, self.config.hidden_size),
         )
+        pos_emb = pos_emb.astype(self.config.dtype)
+        x = x + pos_emb[None, :x.shape[1]]
+        # Transformer blocks
+        transformer_fn = functools.partial(
+            TransformerBlock, self.config, mask, train)
+        if "transformer" in self.config.remat:
+            transformer_fn = nn.remat(transformer_fn, prevent_cse=False)
+        if self.config.scan_layers:
+            transformer = transformer_fn(name="transformer")
+            x, _ = nn.scan(
+                # carry is the input (x) to each block/module
+                lambda module, carry, _: (module(carry), None),
+                variable_axes={"params": 0},  # ask
+                split_rngs={"params": True, "dropout": True},  # ask
+                length=self.config.num_transformer_layers,
+            )(transformer, x, ())
+        else:
+            for idx in range(self.config.num_transformer_layers):
+                x = transformer_fn(name=f"block_{idx}")(x)
+        # Output layer
+        x = nn.Layernorm(dtype=self.config.dtype, name="post_norm")(x)
+        x = nn.Dense(
+            features=self.config.num_outputs,  # what is the output?
+            dtype=self.config.dtype,
+            name="output_layer",
+        )(x)
+        x = x.astype(jnp.float32)  # why this?
+        return x
