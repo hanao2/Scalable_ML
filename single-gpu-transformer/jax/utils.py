@@ -7,9 +7,6 @@ from flax.training import train_state
 from flax.struct import dataclass
 from typing import Callable, Any, Tuple
 from ml_collections import ConfigDict
-from model import CustomModel
-from utils import custom_loss
-from utils import Batch, TrainState, train
 
 
 PyTree = Any  # nested dictionaries
@@ -24,19 +21,6 @@ def set_XLA_flags():
         "--xla_gpu_enable_latency_hiding_scheduler=true "
         "--xla_gpu_enable_highest_priority_async_stream=true "
     )
-
-
-def custom_activation(x: jax.Array) -> jax.Array:
-    jax.debug.print('CustomActivation running ...')
-    out = jax.nn.sigmoid(x)
-    return out
-
-
-def custom_loss(x: jax.Array, remat: bool) -> jax.Array:
-    act_fn = custom_activation
-    if remat:
-        act_fn = jax.remat(act_fn)
-    return jnp.mean(act_fn(x))
 
 
 def gelu(x: jax.Array) -> jax.Array:
@@ -129,57 +113,6 @@ def train(
     return grads, metrics
 
 
-def mixed_precision(samples: int, config: ConfigDict):
-    dtype = jnp.float32  # compare this with jnp.bfloat16 and jnp.float16
-    x = jnp.ones(shape=(samples, config.input_size), dtype=dtype)
-    key = jax.random.PRNGKey(0)
-    params_key, dropout_key = jax.random.split(key, num=2)
-    config.dtype = dtype
-    model = CustomModel(config=config)
-
-    # tabulate model
-    # you need to pass the arguments of the __call__ function as well as
-    # random number generators! Welcome to functional programming! :)
-    table = model.tabulate(rngs=params_key, x=x, train=True)
-    print(table)
-
-    # run a forward pass
-    params = model.init(rngs=params_key, x=x, train=True)
-    out = model.apply(params, x, train=True, rngs=dropout_key)
-
-
-def activation_checkpointing(samples: int, config: ConfigDict, remat: bool):
-    dtype = jnp.bfloat16
-    config.dtype = dtype
-    x = jnp.ones(shape=(samples, config.input_size), dtype=dtype)
-    grad_fn = jax.grad(custom_loss)
-    _ = grad_fn(x, remat=False)
-
-
-def gradient_accumulation(
-        samples: int,
-        config: ConfigDict,
-        num_minibatches: int,
-        dropout_rate: float):
-    dtype = jnp.bfloat16
-    config.dropout_rate = dropout_rate
-    config.dtype = dtype
-    rng = jax.random.PRNGKey(0)
-    rng_input, rng_label, rng_param, rng_model = jax.random.split(rng, num=4)
-    batch = Batch(
-        inputs=jax.random.normal(rng_input, (samples, config.input_size)),
-        labels=jax.random.randint(rng_label, (samples,), 0, config.num_classes)
-    )
-    model = CustomModel(config=config)
-    params = model.init(rng_param, batch.inputs, train=False)["params"]
-    state = TrainState.create(
-        params=params,
-        apply_fn=model.apply,
-        tx=optax.adam(1e-3),
-        rng=rng_model
-    )
-
-    grads, metrics = train(batch, state, num_epochs=5,
-                           num_minibatches=num_minibatches)
-    print(f'accuracy:', metrics['accuracy'][0] / metrics['accuracy'][1])
-    print(f'loss:', metrics['loss'][0] / metrics['loss'][1])
+def get_num_params(state: TrainState) -> int:
+    return sum(np.prod(x.shape)
+               for x in jax.tree_util.tree_leaves(state.params))

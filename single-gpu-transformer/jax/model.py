@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 import flax.linen as nn
-from typing import Any
+from typing import Any, Union
 from ml_collections import ConfigDict
 import functools
 from utils import gelu
@@ -105,7 +105,7 @@ class Transformer(nn.Module):
     def __call__(
             self,
             x: jax.Array,
-            mask: jax.Array,
+            mask: Union[jax.Array, None],
             train: bool) -> jax.Array:
         if mask is None and self.config.causal_mask:
             mask = nn.make_causal_mask(x, dtype=jnp.bool_)
