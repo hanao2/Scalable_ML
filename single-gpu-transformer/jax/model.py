@@ -4,7 +4,7 @@ import flax.linen as nn
 from typing import Any, Union
 from ml_collections import ConfigDict
 import functools
-from utils import gelu
+# from utils import gelu
 
 
 class MLPBlock(nn.Module):
@@ -13,13 +13,14 @@ class MLPBlock(nn.Module):
 
     @nn.compact
     def __call__(self, x: jax.Array) -> jax.Array:
-        input_dim = x.shape[0]
+        jax.debug.print('MLP Execution!...')
+        input_dim = x.shape[-1]
         x = nn.LayerNorm(dtype=self.config.dtype, name="pre_norm")(x)
         x = nn.Dense(
-            self.config.hidden_size,
+            self.config.mlp_expansion*input_dim,
             dtype=self.config.dtype,
             name="input_layer")(x)
-        x = gelu(x)
+        x = nn.gelu(x)
         x = nn.Dense(
             input_dim,
             dtype=self.config.dtype,
@@ -44,7 +45,7 @@ def dot_product_attention(
     key = key.astype(softmax_dtype)
     weights = jnp.einsum("...qhd,...khd->...hqk", query, key)
     if mask is not None:
-        weights = jnp.where(mask, weights, jnp.finfo(softmax_dtype))
+        weights = jnp.where(mask, weights, jnp.finfo(softmax_dtype).min)
     weights = nn.softmax(weights, axis=-1)
     weights = weights.astype(dtype)
     new_vals = jnp.einsum("...hqk,...khd->...qhd", weights, value)
@@ -58,7 +59,7 @@ class AttentionBlock(nn.Module):
 
     @nn.compact
     def __call__(self, x: jax.Array) -> jax.Array:
-        input_dim = x.shape[0]
+        input_dim = x.shape[-1]
         x = nn.LayerNorm(dtype=self.config.dtype, name="pre_norm")(x)
         qkv = nn.DenseGeneral(
             (self.config.num_heads,
@@ -105,8 +106,8 @@ class Transformer(nn.Module):
     def __call__(
             self,
             x: jax.Array,
-            mask: Union[jax.Array, None],
-            train: bool) -> jax.Array:
+            train: bool,
+            mask: Union[jax.Array, None] = None) -> jax.Array:
         if mask is None and self.config.causal_mask:
             mask = nn.make_causal_mask(x, dtype=jnp.bool_)
         # Input layer (implement embedding and positional encoding)
@@ -141,7 +142,7 @@ class Transformer(nn.Module):
             for idx in range(self.config.num_transformer_layers):
                 x = transformer_fn(name=f"block_{idx}")(x)
         # Output layer
-        x = nn.Layernorm(dtype=self.config.dtype, name="post_norm")(x)
+        x = nn.LayerNorm(dtype=self.config.dtype, name="post_norm")(x)
         x = nn.Dense(
             features=self.config.num_outputs,  # what is the output?
             dtype=self.config.dtype,

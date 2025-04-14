@@ -5,5 +5,4 @@ repos:
     rev: v1.6.0  # or the latest version
     hooks:
       - id: autopep8
-        args: [--in-place, --aggressive, --aggressive]
 

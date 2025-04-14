@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ```
 
 
-This project implements a GPT-style autoregressive model, and that's why you we've set the output size to a value equal to the vocabulary size. We want to generate a token/vocab based on the prior tokens. Furthermore, to prepare the training data, we first generate an array of tokens with size `batch * sequence length` and values/IDs in the range of `[1, vocab size)`. We then attribute this array to the labels. You can think of it as if we want to generate the ID of a specific token given all the previous tokens in a sequence. 
+This project implements a GPT-style autoregressive model, and that's why you we've set the output size to a value equal to the vocabulary size (each vocab would get be assigned a probability value). We want to generate a token/vocab based on the prior tokens (causal sequence modeling). Furthermore, to prepare the training data, we first generate an array of tokens with size `batch * sequence length` and values/IDs in the range of `[1, vocab size)`. We then attribute this array to the labels. You can think of it as if we want to generate the ID of a specific token given all the previous tokens in a sequence. Also, to construct the array of inputs, the tokens are right-shifted and left-zero-padded. This zero is called a beggining of sentence (BOS) or start token. THis is a special token added at the start of a sequence in NLP tasks to inform the model about the start of a new sentence.
 
 We also try to profile this model, as a way to optimize its performance. We use the ml_collections module and the ConfigDict class for a conveninet dot-access of the model hyperparameters.
 
@@ -28,3 +28,6 @@ The use of `functools.partial` allows for freezing all or a subset of arguments 
 To reduce the memory footprint, we do the following:
 - Set the intermediate values to `bfloat16` precision, except for the input to the softmax layer.
 - Use activation checkpointing for the MLP and attention blocks.
+- Use gradient accumulation. We divide the batch into 4 sub-batches and accumulate the gradients over them.
+
+When calculating the accuracy of the model predictions, keep in mind that we are making as many as `batch size * sequence length` predictions.
